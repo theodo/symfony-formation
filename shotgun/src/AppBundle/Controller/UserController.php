@@ -2,6 +2,7 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\Form\SearchType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
@@ -20,16 +21,31 @@ class UserController extends Controller
      * Lists all User entities.
      *
      * @Route("/", name="user_index")
-     * @Method("GET")
+     * @Method({"GET", "POST"})
      */
-    public function indexAction()
+    public function indexAction(Request $request)
     {
+        $form = $this->createForm(SearchType::class);
+
+        $form->handleRequest($request);
+
+        $search = null;
+        if ($form->isSubmitted() && $form->isValid()) {
+            $search = $form['search']->getData();
+        }
+
         $em = $this->getDoctrine()->getManager();
 
-        $users = $em->getRepository('AppBundle:User')->findAll();
+        if (null === $search) {
+            $users = $em->getRepository('AppBundle:User')->findAll();
+        } else {
+            $users = $em->getRepository('AppBundle:User')->findByFirstName($search);
+        }
 
         return $this->render('user/index.html.twig', array(
             'users' => $users,
+            'form' => $form->createView(),
+            'search' => $search,
         ));
     }
 
